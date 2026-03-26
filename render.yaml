@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: percy-push-server
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GITHUB_REPO
+        value: ChrisBeast67/percy-website
+      - key: GITHUB_BRANCH
+        value: main
+      - key: PUSH_API_KEY
+        value: percy-website-secret-key
