@@ -1,5 +1,4 @@
 const express = require('express');
-const crypto = require('crypto');
 
 const app = express();
 app.use(express.json({ limit: '5mb' }));
@@ -12,6 +11,9 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const GITHUB_REPO = process.env.GITHUB_REPO || 'ChrisBeast67/percy-website';
 const GITHUB_BRANCH = process.env.GITHUB_BRANCH || 'main';
 
+// OpenAI config from environment
+const OPENAI_KEY = process.env.OPENAI_API_KEY;
+
 if (!GITHUB_TOKEN) {
     console.error('❌ GITHUB_TOKEN environment variable not set!');
     process.exit(1);
@@ -20,6 +22,85 @@ if (!GITHUB_TOKEN) {
 // Health check
 app.get('/', (req, res) => {
     res.json({ status: 'ok', service: 'Percy Website Push Server' });
+});
+
+// Generate game endpoint
+app.post('/generate-game', async (req, res) => {
+    // Check API key
+    const apiKey = req.headers['x-api-key'];
+    if (apiKey !== API_KEY) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { name, prompt } = req.body;
+
+    if (!name || !prompt) {
+        return res.status(400).json({ error: 'Missing name or prompt' });
+    }
+
+    if (!OPENAI_KEY) {
+        return res.status(500).json({ error: 'OpenAI API key not configured on server' });
+    }
+
+    const systemPrompt = `You are a game generator. Create a complete, playable HTML5 game based on the user's description. 
+
+Rules:
+- Return ONLY the HTML file content - no explanations, no markdown, no code blocks
+- The game must be fully functional and playable
+- Use vanilla JavaScript and CSS (no external dependencies except fonts)
+- Include a game title in the HTML
+- Make it fun and polished
+- Use this format for the HTML:
+<!DOCTYPE html>
+<html>
+<head>
+<title>GAME TITLE</title>
+<style>/* CSS here */</style>
+</head>
+<body>
+<!-- Game HTML -->
+<scr\` + \`ipt>/* JS here */</scr\` + \`ipt>
+</body>
+</html>`;
+
+    try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + OPENAI_KEY
+            },
+            body: JSON.stringify({
+                model: 'gpt-4o-mini',
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: `Create a game called "${name}": ${prompt}` }
+                ],
+                max_tokens: 4000
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+            return res.status(500).json({ error: data.error.message });
+        }
+
+        let gameCode = data.choices[0].message.content;
+        
+        // Clean up any markdown formatting
+        gameCode = gameCode.replace(/^```html\n?/, '').replace(/\n?```$/, '').trim();
+
+        res.json({
+            success: true,
+            code: gameCode,
+            name: name
+        });
+
+    } catch (error) {
+        console.error('Generate error:', error);
+        res.status(500).json({ error: 'Failed to generate game' });
+    }
 });
 
 // Push game endpoint
