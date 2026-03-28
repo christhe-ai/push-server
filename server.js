@@ -11,9 +11,9 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const GITHUB_REPO = process.env.GITHUB_REPO || 'ChrisBeast67/percy-website';
 const GITHUB_BRANCH = process.env.GITHUB_BRANCH || 'main';
 
-// OpenAI config from environment
-const OPENAI_KEY = process.env.OPENAI_API_KEY;
-const OPENAI_BASE_URL = 'https://api.openai.com/v1';
+// MiniMax config from environment
+const MINIMAX_KEY = process.env.MINIMAX_API_KEY;
+const MINIMAX_BASE_URL = 'https://api.minimax.chat/v1';
 
 if (!GITHUB_TOKEN) {
     console.error('❌ GITHUB_TOKEN environment variable not set!');
@@ -39,8 +39,8 @@ app.post('/generate-game', async (req, res) => {
         return res.status(400).json({ error: 'Missing name or prompt' });
     }
 
-    if (!OPENAI_KEY) {
-        return res.status(500).json({ error: 'OpenAI API key not configured on server' });
+    if (!MINIMAX_KEY) {
+        return res.status(500).json({ error: 'MiniMax API key not configured on server' });
     }
 
     const systemPrompt = `You are a game generator. Create a simple, fun HTML5 game.
@@ -53,14 +53,14 @@ Rules:
 <!DOCTYPE html><html><head><title>GAME TITLE</title><style>CSS here</style></head><body>GAME HTML<script>JS here</script></body></html>`;
 
     try {
-        const response = await fetch(`${OPENAI_BASE_URL}/chat/completions`, {
+        const response = await fetch(`${MINIMAX_BASE_URL}/text/chatcompletion_v2`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + OPENAI_KEY
+                'Authorization': 'Bearer ' + MINIMAX_KEY
             },
             body: JSON.stringify({
-                model: 'gpt-4o-mini',
+                model: 'MiniMax-M2.7',
                 messages: [
                     { role: 'system', content: systemPrompt },
                     { role: 'user', content: `Create "${name}": ${prompt}` }
