@@ -43,26 +43,14 @@ app.post('/generate-game', async (req, res) => {
         return res.status(500).json({ error: 'MiniMax API key not configured on server' });
     }
 
-    const systemPrompt = `You are a game generator. Create a complete, playable HTML5 game based on the user's description. 
+    const systemPrompt = `You are a game generator. Create a simple, fun HTML5 game.
 
 Rules:
-- Return ONLY the HTML file content - no explanations, no markdown, no code blocks
-- The game must be fully functional and playable
-- Use vanilla JavaScript and CSS (no external dependencies except fonts)
-- Include a game title in the HTML
-- Make it fun and polished
-- Use this format for the HTML:
-<!DOCTYPE html>
-<html>
-<head>
-<title>GAME TITLE</title>
-<style>/* CSS here */</style>
-</head>
-<body>
-<!-- Game HTML -->
-<scr\` + \`ipt>/* JS here */</scr\` + \`ipt>
-</body>
-</html>`;
+- Return ONLY the HTML file content - no explanations, no markdown
+- Simple vanilla JS and CSS only
+- Game must be playable
+- Use this exact format:
+<!DOCTYPE html><html><head><title>GAME TITLE</title><style>CSS here</style></head><body>GAME HTML<script>JS here</script></body></html>`;
 
     try {
         const response = await fetch(`${MINIMAX_BASE_URL}/text/chatcompletion_v2`, {
@@ -75,9 +63,10 @@ Rules:
                 model: 'MiniMax-M2.7',
                 messages: [
                     { role: 'system', content: systemPrompt },
-                    { role: 'user', content: `Create a game called "${name}": ${prompt}` }
+                    { role: 'user', content: `Create "${name}": ${prompt}` }
                 ],
-                max_tokens: 4000
+                max_tokens: 2500,
+                temperature: 0.8
             })
         });
 
